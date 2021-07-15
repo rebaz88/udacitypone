@@ -69,23 +69,32 @@ class Blockchain {
         let self = this;
         return new Promise(async (resolve, reject) => {
 
-            block.height = self.chain.length;
+            try {
+                let chainErrors = await this.validateChain();
+                if (chainErrors) {
+                    console.error(chainErrors);
+                    resolve("Operation canceled because the blockchain has been modified!")
+                } else {
+                    block.height = self.chain.length;
 
-            block.time = new Date().getTime().toString().slice(0, -3);
+                    block.time = new Date().getTime().toString().slice(0, -3);
 
-            if (self.chain.length > 0) {
-                block.previousBlockHash = self.chain[self.chain.length - 1].hash;
-            }
+                    if (self.chain.length > 0) {
+                        block.previousBlockHash = self.chain[self.chain.length - 1].hash;
+                    }
 
-            block.hash = SHA256(JSON.stringify(block)).toString();
+                    block.hash = SHA256(JSON.stringify(block)).toString();
 
-            self.chain.push(block);
+                    self.chain.push(block);
 
-            if(block) {
-                resolve(block);
-            } else {
-                reject("Could not add the block");
-            }
+                    if (block) {
+                        resolve(block);
+                    } else {
+                        reject("Could not add the block");
+                    }
+                }
+            } catch (err) {}
+
         });
     }
 
@@ -126,8 +135,8 @@ class Blockchain {
             var requesttedTime = parseInt(message.split(':')[1]);
             let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
 
-            if((currentTime - requesttedTime) <= (5 * 60)) {
-                if(bitcoinMessage.verify(message, address, signature)) {
+            if ((currentTime - requesttedTime) <= (5 * 60)) {
+                if (bitcoinMessage.verify(message, address, signature)) {
                     let block = new BlockClass.Block({
                         "star": star,
                         "bitcoinWalletAddress": address,
@@ -189,10 +198,10 @@ class Blockchain {
         let stars = [];
         return new Promise((resolve, reject) => {
 
-            self.chain.forEach(async function(block) {
+            self.chain.forEach(async function (block) {
                 let data = await block.getBData();
-                if(data) {
-                    if(data.bitcoinWalletAddress == address) {
+                if (data) {
+                    if (data.bitcoinWalletAddress == address) {
                         stars.push(data);
                     }
                 }
@@ -222,9 +231,9 @@ class Blockchain {
 
                 let dataIsValidInsideBlock = await block.validate();
 
-                if(dataIsValidInsideBlock) {
-                    if(block.height != 0) {
-                        if(block.previousBlockHash != self.chain[block.height - 1].hash) {
+                if (dataIsValidInsideBlock) {
+                    if (block.height != 0) {
+                        if (block.previousBlockHash != self.chain[block.height - 1].hash) {
                             errorLog.push(`Invalid block at height ${block.height - 1}!`);
                         }
                     }
@@ -234,7 +243,7 @@ class Blockchain {
 
             }
 
-            if(errorLog.length > 0) {
+            if (errorLog.length > 0) {
                 resolve(errorLog);
             } else {
                 resolve(null);
